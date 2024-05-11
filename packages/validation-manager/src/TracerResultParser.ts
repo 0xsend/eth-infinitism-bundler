@@ -243,8 +243,14 @@ export function tracerResultParser (
       `${entityTitle} internally reverts on oog`, ValidationErrors.OpcodeValidation)
 
     // opcodes from [OP-011]
-    Object.keys(opcodes).forEach(opcode =>
-      requireCond(!bannedOpCodes.has(opcode), `${entityTitle} uses banned opcode: ${opcode}`, ValidationErrors.OpcodeValidation)
+    Object.keys(opcodes).forEach(opcode => {
+        // allow paymaster selfbalance
+        if (entityTitle === 'paymaster' && opcode === 'SELFBALANCE') {
+          return
+        }
+
+        return requireCond(!bannedOpCodes.has(opcode), `${entityTitle} uses banned opcode: ${opcode}`, ValidationErrors.OpcodeValidation)
+      }
     )
     // [OP-031]
     if (entityTitle === 'factory') {
@@ -345,6 +351,8 @@ export function tracerResultParser (
         return title ?? addr
       }
 
+      if (requireStakeSlot === '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc') // erc1967 IMPLEMENTATION_SLOT
+        return
       requireCondAndStake(requireStakeSlot != null, entStakes,
         `unstaked ${entityTitle} accessed ${nameAddr(addr, entityTitle)} slot ${requireStakeSlot}`)
     })
