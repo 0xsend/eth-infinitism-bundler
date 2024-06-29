@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node `dirname $0`/bundler.js "$@"
+exec bun run `dirname $0`/bundler.js "$@"
