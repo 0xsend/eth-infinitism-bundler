@@ -83,7 +83,11 @@ export class BundleManager {
    */
   async sendBundle (userOps: UserOperation[], beneficiary: string, storageMap: StorageMap): Promise<SendBundleReturn | undefined> {
     try {
-      const feeData = await this.provider.getFeeData()
+      const feeData = await this.getFeeData().catch(async (e) => {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        debug(`failed to get fee data: ${e}`)
+        return await this.provider.getFeeData()
+      })
       const tx = await this.entryPoint.populateTransaction.handleOps(userOps.map(packUserOp), beneficiary, {
         type: 2,
         nonce: await this.signer.getTransactionCount(),
@@ -278,5 +282,37 @@ export class BundleManager {
       [this.entryPoint.address, userOps.map(packUserOp)])
 
     return userOpHashes
+  }
+
+  private async getFeeData (): Promise<{ maxFeePerGas: BigNumber, maxPriorityFeePerGas: BigNumber }> {
+    const denominator = 100
+    const factor = 1.2 // TODO: use gas factor
+    const multiplier = BigNumber.from(Math.ceil(factor * denominator))
+    const multiply = (base: BigNumber): BigNumber => base.mul(multiplier).div(denominator)
+    const [block, gasPrice] = await Promise.all([
+      this.provider.getBlock('latest'),
+      this.provider.getGasPrice()
+    ])
+    // estimate max fee per gas as a multiple of baseFeePerGas
+    const maxPriorityFeePerGas = await this.provider
+      .send('eth_maxPriorityFeePerGas', [])
+      .catch((e) => {
+        console.log('eth_maxPriorityFeePerGas not supported. using gasPrice - baseFeePerGas', e)
+        // If the RPC Provider does not support `eth_maxPriorityFeePerGas`
+        // fall back to calculating it manually via `gasPrice - baseFeePerGas`.
+        const maxPriorityFeePerGas = gasPrice.sub(BigNumber.from(block.baseFeePerGas))
+        if (maxPriorityFeePerGas.lt(0)) {
+          return BigNumber.from(0)
+        }
+        return maxPriorityFeePerGas
+      })
+    // console.log('maxPriorityFeePerGas=', maxPriorityFeePerGas.toString())
+
+    if (block.baseFeePerGas == null) {
+      throw new Error('no baseFeePerGas')
+    }
+    const baseFeePerGas = multiply(block.baseFeePerGas)
+    const maxFeePerGas = baseFeePerGas.add(maxPriorityFeePerGas)
+    return { maxFeePerGas, maxPriorityFeePerGas }
   }
 }
