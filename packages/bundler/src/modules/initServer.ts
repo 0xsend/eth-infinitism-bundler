@@ -22,8 +22,19 @@ export function initServer (config: BundlerConfig, signer: Signer): [ExecutionMa
   const mempoolManager = new MempoolManager(reputationManager)
   const validationManager = new ValidationManager(entryPoint, config.unsafe)
   const eventsManager = new EventsManager(entryPoint, mempoolManager, reputationManager)
-  const bundleManager = new BundleManager(entryPoint, eventsManager, mempoolManager, validationManager, reputationManager,
-    config.beneficiary, parseEther(config.minBalance), config.maxBundleGas, config.conditionalRpc)
+  const bundleManager = new BundleManager(
+    entryPoint,
+    eventsManager,
+    mempoolManager,
+    validationManager,
+    reputationManager,
+    config.beneficiary,
+    parseEther(config.minBalance),
+    config.maxBundleGas,
+    config.conditionalRpc,
+    false, // mergeToAccountRootHash
+    Number(config.gasFactor)
+  )
   const executionManager = new ExecutionManager(reputationManager, mempoolManager, bundleManager, validationManager)
 
   reputationManager.addWhitelist(...config.whitelist ?? [])

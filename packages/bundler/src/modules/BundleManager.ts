@@ -42,10 +42,18 @@ export class BundleManager {
     // use eth_sendRawTransactionConditional with storage map
     readonly conditionalRpc: boolean,
     // in conditionalRpc: always put root hash (not specific storage slots) for "sender" entries
-    readonly mergeToAccountRootHash: boolean = false
+    readonly mergeToAccountRootHash: boolean = false,
+    /**
+     * Gas factor to use for bundler
+     */
+    readonly gasFactor: number = 1.2
   ) {
     this.provider = entryPoint.provider as JsonRpcProvider
     this.signer = entryPoint.signer as JsonRpcSigner
+    debug('gasFactor=', gasFactor)
+    if (Number.isNaN(gasFactor) || gasFactor <= 0) {
+      throw new Error('gasFactor must be a number > 0')
+    }
   }
 
   /**
@@ -88,6 +96,7 @@ export class BundleManager {
         debug(`failed to get fee data: ${e}`)
         return await this.provider.getFeeData()
       })
+      debug('feeData=', feeData)
       const tx = await this.entryPoint.populateTransaction.handleOps(userOps.map(packUserOp), beneficiary, {
         type: 2,
         nonce: await this.signer.getTransactionCount(),
@@ -286,7 +295,7 @@ export class BundleManager {
 
   private async getFeeData (): Promise<{ maxFeePerGas: BigNumber, maxPriorityFeePerGas: BigNumber }> {
     const denominator = 100
-    const factor = 1.2 // TODO: use gas factor
+    const factor = this.gasFactor
     const multiplier = BigNumber.from(Math.ceil(factor * denominator))
     const multiply = (base: BigNumber): BigNumber => base.mul(multiplier).div(denominator)
     const [block, gasPrice] = await Promise.all([
