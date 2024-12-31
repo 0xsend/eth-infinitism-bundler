@@ -115,10 +115,10 @@ export class BundleManager {
         debug('eth_sendRawTransactionConditional ret=', ret)
       } else {
         const resp = await this.signer.sendTransaction(tx)
-        const rcpt = await resp.wait()
+        debug('eth_sendTransaction ret=', resp.hash)
+        const rcpt = await this.provider.waitForTransaction(resp.hash, 1, 5_000)
+        debug('eth_sendTransaction rcpt=', rcpt.transactionHash)
         ret = rcpt.transactionHash
-        // ret = await this.provider.send('eth_sendRawTransaction', [signedTx])
-        debug('eth_sendTransaction ret=', ret)
       }
       // TODO: parse ret, and revert if needed.
       debug('ret=', ret)
