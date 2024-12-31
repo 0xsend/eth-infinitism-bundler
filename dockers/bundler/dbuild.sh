@@ -1,6 +1,9 @@
 #!/bin/bash -e
 cd `cd \`dirname $0\`;pwd`
 
+# build and push
+# VERSION=0.7.1-$(git rev-parse HEAD | cut -c1-7) PUSH=1 IMAGE=0xbigboss/bundler ./dockers/bundler/dbuild.sh 
+
 #need to preprocess first to have the Version.js
 test -z $NOBUILD && yarn preprocess
 
@@ -33,4 +36,4 @@ fi
 
 echo "== pushing docker image $IMAGE:$VERSION"
 
-docker build --platform linux/amd64,linux/arm64 --push -t  $IMAGE:$VERSION .
+docker buildx build --platform linux/amd64,linux/arm64 --push -t  $IMAGE:$VERSION .
