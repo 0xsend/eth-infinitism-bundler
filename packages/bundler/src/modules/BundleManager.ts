@@ -143,7 +143,6 @@ export class BundleManager {
       try {
         parsedError = this.entryPoint.interface.parseError((e.data?.data ?? e.data))
       } catch (e1) {
-        this.checkFatal(e)
         if (e.error?.code === -32000) {
           const msg: string = e.error.message ?? ''
           if (msg.includes('transaction underpriced')) {
@@ -153,6 +152,7 @@ export class BundleManager {
             return
           }
         }
+        this.checkFatal(e)
         console.warn('Failed handleOps, but non-FailedOp error', e)
         return
       }
