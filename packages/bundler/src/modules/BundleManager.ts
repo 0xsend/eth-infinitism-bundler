@@ -62,6 +62,10 @@ export class BundleManager {
    * send this bundle.
    */
   async sendNextBundle (): Promise<SendBundleReturn | undefined> {
+    if (this.mutex.isLocked()) {
+      // already running
+      return
+    }
     return await this.mutex.runExclusive(async () => {
       debug('sendNextBundle')
 
