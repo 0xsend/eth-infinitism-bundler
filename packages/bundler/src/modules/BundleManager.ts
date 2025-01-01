@@ -143,14 +143,11 @@ export class BundleManager {
       try {
         parsedError = this.entryPoint.interface.parseError((e.data?.data ?? e.data))
       } catch (e1) {
-        if (e.error?.code === -32000) {
-          const msg: string = e.error.message ?? ''
-          if (msg.includes('transaction underpriced')) {
-            console.warn('Failed handleOps, but transaction underpriced', e)
-            // Increment failed attempts counter
-            this.transactionAttempts = Math.min(this.transactionAttempts + 1, this.maxPriorityFeeRetries)
-            return
-          }
+        if ((e as Error)?.message?.includes('replacement fee too low')) {
+          console.warn('Failed handleOps, but replacement fee too low', e)
+          // Increment failed attempts counter
+          this.transactionAttempts = Math.min(this.transactionAttempts + 1, this.maxPriorityFeeRetries)
+          return
         }
         this.checkFatal(e)
         console.warn('Failed handleOps, but non-FailedOp error', e)
