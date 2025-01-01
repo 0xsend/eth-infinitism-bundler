@@ -237,7 +237,7 @@ describe('BundleManager Fee Management', () => {
     })
 
     it('should cap priority fee increases at maxPriorityFeeRetries', async () => {
-      mockProvider.send.resolves(BigNumber.from(50000000))
+      mockProvider.send.resolves(BigNumber.from(50000000).toHexString())
       bundleManager.transactionAttempts = 20 // More than maxPriorityFeeRetries
 
       const result = await bundleManager.getFeeData()

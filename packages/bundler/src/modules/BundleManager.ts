@@ -320,7 +320,7 @@ export class BundleManager {
       this.provider.getGasPrice()
     ])
     // estimate max fee per gas as a multiple of baseFeePerGas
-    let maxPriorityFeePerGas: BigNumber = await this.provider
+    let maxPriorityFeePerGas: BigNumber = BigNumber.from(await this.provider
       .send('eth_maxPriorityFeePerGas', [])
       .catch((e) => {
         console.log('eth_maxPriorityFeePerGas not supported. using gasPrice - baseFeePerGas', e)
@@ -331,7 +331,7 @@ export class BundleManager {
           return BigNumber.from(0)
         }
         return maxPriorityFeePerGas
-      })
+      }))
     // console.log('maxPriorityFeePerGas=', maxPriorityFeePerGas.toString())
     // Apply linear increase based on failed attempts
     if (this.transactionAttempts > 0) {
