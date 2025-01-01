@@ -29,6 +29,10 @@ export class BundleManager {
   provider: JsonRpcProvider
   signer: JsonRpcSigner
   mutex = new Mutex()
+  private readonly FEE_DENOM: number = 100 // For percentage calculations
+  public transactionAttempts = 0 // Number of failed attempts or increases
+  public readonly priorityFeeIncreaseFactor: number = 10 // 10 would be 10% increase per failure
+  public readonly maxPriorityFeeRetries: number = 10 // Maximum number of retries, caps linear increase
 
   constructor (
     readonly entryPoint: IEntryPoint,
@@ -120,11 +124,12 @@ export class BundleManager {
       } else {
         const resp = await this.signer.sendTransaction(tx)
         debug('eth_sendTransaction ret=', resp.hash)
-        const rcpt = await this.provider.waitForTransaction(resp.hash, 1, 5_000)
+        const rcpt = await this.provider.waitForTransaction(resp.hash, 1, 2_000)
         debug('eth_sendTransaction rcpt=', rcpt.transactionHash)
         ret = rcpt.transactionHash
       }
       // TODO: parse ret, and revert if needed.
+      this.transactionAttempts = 0
       debug('ret=', ret)
       debug('sent handleOps with', userOps.length, 'ops. removing from mempool')
       // hashes are needed for debug rpc only.
@@ -139,6 +144,15 @@ export class BundleManager {
         parsedError = this.entryPoint.interface.parseError((e.data?.data ?? e.data))
       } catch (e1) {
         this.checkFatal(e)
+        if (e.error?.code === -32000) {
+          const msg: string = e.error.message ?? ''
+          if (msg.includes('transaction underpriced')) {
+            console.warn('Failed handleOps, but transaction underpriced', e)
+            // Increment failed attempts counter
+            this.transactionAttempts = Math.min(this.transactionAttempts + 1, this.maxPriorityFeeRetries)
+            return
+          }
+        }
         console.warn('Failed handleOps, but non-FailedOp error', e)
         return
       }
@@ -297,17 +311,16 @@ export class BundleManager {
     return userOpHashes
   }
 
-  private async getFeeData (): Promise<{ maxFeePerGas: BigNumber, maxPriorityFeePerGas: BigNumber }> {
-    const denominator = 100
+  public async getFeeData (): Promise<{ maxFeePerGas: BigNumber, maxPriorityFeePerGas: BigNumber }> {
     const factor = this.gasFactor
-    const multiplier = BigNumber.from(Math.ceil(factor * denominator))
-    const multiply = (base: BigNumber): BigNumber => base.mul(multiplier).div(denominator)
+    const multiplier = BigNumber.from(Math.ceil(factor * this.FEE_DENOM))
+    const multiply = (base: BigNumber): BigNumber => base.mul(multiplier).div(this.FEE_DENOM)
     const [block, gasPrice] = await Promise.all([
       this.provider.getBlock('latest'),
       this.provider.getGasPrice()
     ])
     // estimate max fee per gas as a multiple of baseFeePerGas
-    const maxPriorityFeePerGas = await this.provider
+    let maxPriorityFeePerGas: BigNumber = await this.provider
       .send('eth_maxPriorityFeePerGas', [])
       .catch((e) => {
         console.log('eth_maxPriorityFeePerGas not supported. using gasPrice - baseFeePerGas', e)
@@ -320,7 +333,19 @@ export class BundleManager {
         return maxPriorityFeePerGas
       })
     // console.log('maxPriorityFeePerGas=', maxPriorityFeePerGas.toString())
-
+    // Apply linear increase based on failed attempts
+    if (this.transactionAttempts > 0) {
+      const effectiveIncrease = BigNumber.from(
+        Math.min(this.transactionAttempts, this.maxPriorityFeeRetries)
+      ).mul(this.priorityFeeIncreaseFactor)
+      // Calculate increase factor using linear approach where the increase factor is a percentage on top of the base fee
+      // ((50000000 * 10) / 100 + 50000000 = 55000000
+      maxPriorityFeePerGas = maxPriorityFeePerGas
+        .mul(effectiveIncrease)
+        .div(this.FEE_DENOM)
+        .add(maxPriorityFeePerGas)
+      debug('Fee increase factor:', maxPriorityFeePerGas.toString(), 'after', this.transactionAttempts, 'attempts')
+    }
     if (block.baseFeePerGas == null) {
       throw new Error('no baseFeePerGas')
     }
