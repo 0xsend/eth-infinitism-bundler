@@ -86,6 +86,7 @@ export class BundleManager {
       const [bundle, storageMap] = await this.createBundle()
       if (bundle.length === 0) {
         debug('sendNextBundle - no bundle to send')
+        this.transactionAttempts = 0 // reset transaction attempts
       } else {
         const beneficiary = await this._selectBeneficiary()
         const ret = await this.sendBundle(bundle, beneficiary, storageMap)
