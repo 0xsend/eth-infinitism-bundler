@@ -31,8 +31,6 @@ export class BundleManager {
   mutex = new Mutex()
   private readonly FEE_DENOM: number = 100 // For percentage calculations
   public transactionAttempts = 0 // Number of failed attempts or increases
-  public readonly priorityFeeIncreaseFactor: number = 10 // 10 would be 10% increase per failure
-  public readonly maxPriorityFeeRetries: number = 10 // Maximum number of retries, caps linear increase
 
   constructor (
     readonly entryPoint: IEntryPoint,
@@ -50,14 +48,23 @@ export class BundleManager {
     /**
      * Gas factor to use for bundler
      */
-    readonly gasFactor: number = 1.2
+    readonly gasFactor: number = 1.2,
+    /**
+     * Factor to increase priority fees
+     * 10 would be 10% increase per failure
+     */
+    readonly priorityFeeIncreaseFactor: number = 50,
+    /**
+     * Maximum number of retries, caps linear increase
+     */
+    readonly maxPriorityFeeRetries: number = 10
   ) {
     this.provider = entryPoint.provider as JsonRpcProvider
     this.signer = entryPoint.signer as JsonRpcSigner
-    debug('gasFactor=', gasFactor)
     if (Number.isNaN(gasFactor) || gasFactor <= 0) {
       throw new Error('gasFactor must be a number > 0')
     }
+    debug('Initialized BundleManager', { gasFactor, priorityFeeIncreaseFactor, maxPriorityFeeRetries })
   }
 
   /**

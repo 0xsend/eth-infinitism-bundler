@@ -22,6 +22,8 @@ export interface BundlerConfig {
   minUnstakeDelay: number
   autoBundleInterval: number
   autoBundleMempoolSize: number
+  priorityFeeIncreaseFactor: number
+  maxPriorityFeeRetries: number
 }
 
 // TODO: implement merging config (args -> config.js -> default) and runtime shape validation
@@ -43,7 +45,9 @@ export const BundlerConfigShape = {
   minStake: ow.string,
   minUnstakeDelay: ow.number,
   autoBundleInterval: ow.number,
-  autoBundleMempoolSize: ow.number
+  autoBundleMempoolSize: ow.number,
+  priorityFeeIncreaseFactor: ow.number,
+  maxPriorityFeeRetries: ow.number
 }
 
 // TODO: consider if we want any default fields at all
@@ -54,5 +58,7 @@ export const bundlerConfigDefault: Partial<BundlerConfig> = {
   unsafe: false,
   conditionalRpc: false,
   minStake: MIN_STAKE_VALUE,
-  minUnstakeDelay: MIN_UNSTAKE_DELAY
+  minUnstakeDelay: MIN_UNSTAKE_DELAY,
+  priorityFeeIncreaseFactor: 50,
+  maxPriorityFeeRetries: 10
 }

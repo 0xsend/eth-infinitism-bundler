@@ -7,8 +7,10 @@
   "minBalance": "1",
   "mnemonic": "./localconfig/mnemonic.txt",
   "maxBundleGas": 5e6,
-  "minStake": "1" ,
-  "minUnstakeDelay": 0 ,
+  "minStake": "1",
+  "minUnstakeDelay": 0,
   "autoBundleInterval": 3,
-  "autoBundleMempoolSize": 10
+  "autoBundleMempoolSize": 10,
+  "priorityFeeIncreaseFactor": 50,
+  "maxPriorityFeeRetries": 10
 }

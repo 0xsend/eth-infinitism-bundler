@@ -33,7 +33,9 @@ export function initServer (config: BundlerConfig, signer: Signer): [ExecutionMa
     config.maxBundleGas,
     config.conditionalRpc,
     false, // mergeToAccountRootHash
-    Number(config.gasFactor)
+    Number(config.gasFactor),
+    Number(config.priorityFeeIncreaseFactor),
+    Number(config.maxPriorityFeeRetries)
   )
   const executionManager = new ExecutionManager(reputationManager, mempoolManager, bundleManager, validationManager)
 
