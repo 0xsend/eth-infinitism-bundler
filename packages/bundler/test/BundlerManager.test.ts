@@ -233,7 +233,7 @@ describe('BundleManager Fee Management', () => {
 
       const result = await bundleManager.getFeeData()
 
-      expect(result.maxPriorityFeePerGas.toString()).to.equal('55000000'.toString())
+      expect(result.maxPriorityFeePerGas.toString()).to.equal('75000000'.toString())
     })
 
     it('should cap priority fee increases at maxPriorityFeeRetries', async () => {
@@ -242,7 +242,7 @@ describe('BundleManager Fee Management', () => {
 
       const result = await bundleManager.getFeeData()
 
-      expect(result.maxPriorityFeePerGas.toString()).to.equal('100000000'.toString())
+      expect(result.maxPriorityFeePerGas.toString()).to.equal('300000000'.toString())
     })
 
     it('should handle eth_maxPriorityFeePerGas not supported', async () => {
